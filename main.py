@@ -91,19 +91,18 @@ def get_steam_logoff(summary_data):
     return player['lastlogoff']
     
 def sendText(currGame, recipient_number, recipient_carrier):
-    print(recipient_carrier)
-    print(recipient_number)
+
     recipient_carrier_gateway = carrier_gateway_map.get(recipient_carrier) 
     num = f'{recipient_number}@{recipient_carrier_gateway}'
-    print(num)
+
     now = pytz.timezone('America/New_York')
     utc_Ny = datetime.datetime.now(now)
     format_time= str(utc_Ny.strftime('%H:%M:%S'))
-    print(format_time)
-   
+ 
     text = f'\nDavid is playing {currGame}! At {format_time}'
     subject = 'GAMING ALERT!'
-    message = 'Subject: {}\n\n{}'.format(subject, text).encode('utf-8')
+    ## ensure the message is ASCII before using SMTP protocol
+    message = 'Subject: {}\n\n{}'.format(subject, text).encode('ascii', 'replace').decode('ascii').strip().replace("?","")
     try:
         s = smtplib.SMTP('smtp.gmail.com',587,timeout=3000)
         s.starttls()
@@ -112,10 +111,10 @@ def sendText(currGame, recipient_number, recipient_carrier):
         s.sendmail(email_to_send_from, num, message)
         
     except Exception as e:
-        print("mail failed- %s", e)
         sys.exit( "mail failed- %s", e ) # give an error message
     finally:
         s.quit() 
+
 
 if __name__ == "__main__":
    
