@@ -15,8 +15,10 @@ discord_client_id = os.getenv("CLIENT_ID")
 discord_client_secret = os.getenv("CLIENT_SECRET")
 discord_bot_token = os.getenv("BOT_TOKEN")
 steam_key = os.getenv("STEAM_KEY")
+steam_user_id = os.getenv("STEAM_USER_ID")
 email_to_send_from = os.getenv("GMAIL_APP_EMAIL")
 app_password_from_email = os.getenv("GMAIL_APP_PASSWORD")
+
 
 carrier_gateway_map = {
     "Verizon": "vtext.com",
@@ -29,7 +31,6 @@ carrier_gateway_map = {
     "Cricket": "sms.cricketwireless.net",
     "US_Cellular": "email.uscc.net"
 }
-
 
 
 def load_user_config():
@@ -97,11 +98,28 @@ def get_curr_steam_game(summary_data):
     if "gameextrainfo" in player:
         return player['gameextrainfo']
     return "0"
+
 def get_steam_logoff(summary_data):
     player = summary_data['response']['players'][0]
     return player['lastlogoff']
+
+def textContent(gamer_name, curr_game, gaming_status = True):
+
+    now = pytz.timezone('America/New_York')
+    utc_Ny = datetime.datetime.now(now)
+    format_time= str(utc_Ny.strftime('%H:%M'))
+    subject = 'GAMING ALERT!'
+
+    if gaming_status:
+        text = f'\n{gamer_name} is playing {curr_game}! \nGaming session started at {format_time}'
+    else:
+        text = 'Gaming session ended at {format_time}'
+   
+    ## ensure the message is ASCII before using SMTP protocol
+    message = 'Subject: {}\n\n{}'.format(subject, text).encode('ascii', 'replace').decode('ascii').strip().replace("?","")
+    return message
     
-def sendText(currGame, gamer_details):
+def sendText(curr_game, gamer_details, gaming_status = True):
 
     gamer_name = gamer_details.get('gamerName') 
     recipient_carrier = gamer_details.get('recipientCarrier')
@@ -114,14 +132,7 @@ def sendText(currGame, gamer_details):
     recipient_carrier_gateway = carrier_gateway_map.get(recipient_carrier) 
     num = f'{recipient_number}@{recipient_carrier_gateway}'
 
-    now = pytz.timezone('America/New_York')
-    utc_Ny = datetime.datetime.now(now)
-    format_time= str(utc_Ny.strftime('%H:%M'))
- 
-    text = f'\n{gamer_name} is playing {currGame}! \nGaming session started at {format_time}'
-    subject = 'GAMING ALERT!'
-    ## ensure the message is ASCII before using SMTP protocol
-    message = 'Subject: {}\n\n{}'.format(subject, text).encode('ascii', 'replace').decode('ascii').strip().replace("?","")
+    message = textContent(gamer_name, curr_game, gaming_status)
     try:
         s = smtplib.SMTP('smtp.gmail.com',587,timeout=3000)
         s.starttls()
@@ -136,22 +147,25 @@ def sendText(currGame, gamer_details):
     
 if __name__ == "__main__":
 
-    user_details = load_user_config()
-
-    message_status = "NA"
-    start_gaming_time = int(time.time())
-    response_data = get_discord_bot_token()
-
-    if response_data:
+    ##Default to getting the Steam User Id from the env vars, otherwise get it from Discord
+    if(not steam_user_id and discord_client_secret and discord_client_id):
+        response_data = get_discord_bot_token()
         discord_user_token = response_data["access_token"]
         steam_user_id = get_steam_user_id(discord_user_token)
-        while(True):
-            user_data = get_steam_user_summary(steam_user_id)
-            if start_gaming_time < get_steam_logoff(user_data):
-                sys.exit("Gamer is no longer online, goodbye.")
-            current_steam_game = get_curr_steam_game(user_data)
-            if current_steam_game != "0" and current_steam_game != message_status:
-                sendText(current_steam_game, user_details)
-                message_status = current_steam_game
-            print(message_status)
-            time.sleep(60)
+
+    user_details = load_user_config()
+    last_iter_steam_game = "NA"
+    start_gaming_time = int(time.time())
+
+    while(True):
+        user_data = get_steam_user_summary(steam_user_id)
+        current_steam_game = get_curr_steam_game(user_data)
+        print(user_data)
+        if start_gaming_time < get_steam_logoff(user_data) and last_iter_steam_game != "NA":
+            sendText(current_steam_game, user_details, False)
+            sys.exit("Gamer is no longer online, goodbye.")
+        elif current_steam_game != "0" and current_steam_game != last_iter_steam_game:
+            sendText(current_steam_game, user_details)
+            last_iter_steam_game = current_steam_game
+        print(last_iter_steam_game)
+        time.sleep(6000)
