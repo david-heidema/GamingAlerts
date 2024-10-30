@@ -1,0 +1,4 @@
+gamerName: 'David'
+recipientName: 'My Friend'
+recipientPhoneNumber: '1112222'
+recipientCarrier: 'Verizon' ## See carriers.py for a list of all available carriers

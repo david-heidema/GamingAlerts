@@ -8,47 +8,35 @@ import requests
 import os
 import load_dotenv
 import yaml
+from carriers import carrier_gateway_map
 
-load_dotenv.load_dotenv() 
+load_dotenv.load_dotenv()
 
-discord_client_id = os.getenv("CLIENT_ID")
-discord_client_secret = os.getenv("CLIENT_SECRET")
-discord_bot_token = os.getenv("BOT_TOKEN")
-steam_key = os.getenv("STEAM_KEY")
-steam_user_id = os.getenv("STEAM_USER_ID")
-email_to_send_from = os.getenv("GMAIL_APP_EMAIL")
-app_password_from_email = os.getenv("GMAIL_APP_PASSWORD")
+discord_client_id = os.getenv('DISCORD_CLIENT_ID')
+discord_client_secret = os.getenv('DISCORD_CLIENT_SECRET')
+discord_bot_token = os.getenv('DISCORD_BOT_TOKEN')
+steam_key = os.getenv('STEAM_KEY')
+steam_user_id = os.getenv('STEAM_USER_ID')
+email_to_send_from = os.getenv('GMAIL_APP_EMAIL')
+app_password_from_email = os.getenv('GMAIL_APP_PASSWORD')
 
-
-carrier_gateway_map = {
-    "Verizon": "vtext.com",
-    "Mint_Mobile": "tmomail.net",
-    "T_Mobile": "tmomail.net",
-    "Sprint": "messaging.sprintpcs.com",
-    "AT&T": "txt.att.net",
-    "Pure_Talk": "txt.att.net",
-    "Boost_Mobile": "smsmyboostmobile.com",
-    "Cricket": "sms.cricketwireless.net",
-    "US_Cellular": "email.uscc.net"
-}
-
+carrier_gateway_map = carrier_gateway_map
 
 def load_user_config():
-    with open("userConfig.yaml") as stream:
+    config_file_name = 'userConfig.yaml'
+    with open(config_file_name) as stream:
         try: 
             return yaml.safe_load(stream)
-        except:
-            print(exec)
+        except OSError:
+            print('Could not open/read file:', config_file_name)
+            sys.exit()
        
-
-
 ###https://discord.com/developers/docs/topics/oauth2#bot-users
 def get_discord_bot_token():
   
     data = {
         'scope': 'identify connections',
         'grant_type': 'client_credentials'
-    
     }
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -58,9 +46,9 @@ def get_discord_bot_token():
 
 
 def get_steam_user_id(token):
-    url = "https://discord.com/api/v9/users/@me/connections"
+    url = 'https://discord.com/api/v9/users/@me/connections'
     headers = {
-        "Authorization": f"Bearer {token}"
+        'Authorization': f'Bearer {token}'
     }
 
     try:
@@ -75,8 +63,8 @@ def get_steam_user_id(token):
                 return steam_user_id
             
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
-        return None
+        print(f'An error occurred: {e}')
+        sys.exit()
     
 
 def get_steam_user_summary(steam_id):
@@ -90,82 +78,110 @@ def get_steam_user_summary(steam_id):
         return data
 
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
-        return None
+        print(f'An error occurred: {e}')
+        sys.exit()
+
+
+# Find the value associated with a key in a JSON object
+def find_key(data, key):
+    if isinstance(data, dict):
+        if key in data:
+            return data[key]
+        # Recursively search in nested dictionaries
+        for value in data.values():
+            result = find_key(value, key)
+            if result is not None:
+                return result
+    elif isinstance(data, list):
+        # Search in each item if the data is a list
+        for item in data:
+            result = find_key(item, key)
+            if result is not None:
+                return result
+    return None
 
 def get_curr_steam_game(summary_data):
-    player = summary_data['response']['players'][0]
-    if "gameextrainfo" in player:
-        return player['gameextrainfo']
-    return "0"
+    return find_key(summary_data, 'gameextrainfo')
 
 def get_steam_logoff(summary_data):
-    player = summary_data['response']['players'][0]
-    return player['lastlogoff']
+    return find_key(summary_data, 'lastlogoff')
 
-def textContent(gamer_name, curr_game, gaming_status = True):
+def text_content(gamer_name, curr_game, gaming_status = True):
 
-    now = pytz.timezone('America/New_York')
-    utc_Ny = datetime.datetime.now(now)
-    format_time= str(utc_Ny.strftime('%H:%M'))
+    ## TODO: Parameterize to be used to other time zones, make a map so user can enter plan english
+    time_zone = pytz.timezone('America/New_York')
+    curr_time = datetime.datetime.now(time_zone)
+    print(curr_time)
+    format_time= str(curr_time.strftime('%H:%M'))
     subject = 'GAMING ALERT!'
 
     if gaming_status:
         text = f'\n{gamer_name} is playing {curr_game}! \nGaming session started at {format_time}'
     else:
-        text = 'Gaming session ended at {format_time}'
+        text = f'Gaming session ended at {format_time}'
    
-    ## ensure the message is ASCII before using SMTP protocol
-    message = 'Subject: {}\n\n{}'.format(subject, text).encode('ascii', 'replace').decode('ascii').strip().replace("?","")
+    ## Ensure the message is ASCII before using SMTP
+    message = 'Subject: {}\n\n{}'.format(subject, text).encode('ascii', 'replace').decode('ascii').strip().replace('?','')
     return message
     
-def sendText(curr_game, gamer_details, gaming_status = True):
+def send_text(curr_game, gamer_details, gaming_status = True):
 
-    gamer_name = gamer_details.get('gamerName') 
+    gamer_name = gamer_details.get('gamerName')
     recipient_carrier = gamer_details.get('recipientCarrier')
     recipient_number = gamer_details.get('recipientPhoneNumber')
-    recipient_name = gamer_details.get('recipientName')
 
-    if gamer_name is None or recipient_carrier is None or recipient_number is None or recipient_name is None:
+    if gamer_name is None or recipient_carrier is None or recipient_number is None :
         sys.exit('Malformed data entered in the userConfig file.')
     
     recipient_carrier_gateway = carrier_gateway_map.get(recipient_carrier) 
     num = f'{recipient_number}@{recipient_carrier_gateway}'
 
-    message = textContent(gamer_name, curr_game, gaming_status)
+    message = text_content(gamer_name, curr_game, gaming_status)
     try:
         s = smtplib.SMTP('smtp.gmail.com',587,timeout=3000)
         s.starttls()
         s.login(email_to_send_from, app_password_from_email)
         s.sendmail(email_to_send_from, num, message)
-        print("Successfully texted", recipient_name)
+        print(f'Successfully texted - {message}')
         
     except Exception as e:
-        sys.exit( "mail failed- %s", e ) # give an error message
+        sys.exit( 'mail failed- %s', e ) # give an error message
     finally:
         s.quit() 
     
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     ##Default to getting the Steam User Id from the env vars, otherwise get it from Discord
     if(not steam_user_id and discord_client_secret and discord_client_id):
         response_data = get_discord_bot_token()
-        discord_user_token = response_data["access_token"]
+        discord_user_token = response_data['access_token']
         steam_user_id = get_steam_user_id(discord_user_token)
 
     user_details = load_user_config()
-    last_iter_steam_game = "NA"
+    last_iter_steam_game = None
     start_gaming_time = int(time.time())
 
+    iter = 0
     while(True):
+        iter+=1
         user_data = get_steam_user_summary(steam_user_id)
         current_steam_game = get_curr_steam_game(user_data)
-        print(user_data)
-        if start_gaming_time < get_steam_logoff(user_data) and last_iter_steam_game != "NA":
-            sendText(current_steam_game, user_details, False)
-            sys.exit("Gamer is no longer online, goodbye.")
-        elif current_steam_game != "0" and current_steam_game != last_iter_steam_game:
-            sendText(current_steam_game, user_details)
-            last_iter_steam_game = current_steam_game
-        print(last_iter_steam_game)
-        time.sleep(6000)
+
+        # Send an update text if playing a new game
+        if current_steam_game is not None and current_steam_game != last_iter_steam_game:
+            send_text(current_steam_game, user_details)
+            iter = 0
+        
+        # Send another text every hour, if playing the same game
+        elif iter == 5 and current_steam_game is not None:
+            send_text(current_steam_game, user_details)
+            iter = 0
+
+        # If the player is inactive for 5 iterations, assume they are done gaming
+        elif iter > 5 and last_iter_steam_game is None:
+            send_text(current_steam_game, user_details, False)
+            sys.exit('Gamer is no longer online, goodbye.')
+
+        #Iterate every 15 minutes
+        time.sleep(900)
+        last_iter_steam_game = current_steam_game

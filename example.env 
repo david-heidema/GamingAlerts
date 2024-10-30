@@ -1,0 +1,7 @@
+DISCORD_CLIENT_ID = 'https://discord.com/developers/docs/quick-start/overview-of-apps' ## Optional if you are using the STEAM_USER_ID
+DISCORD_CLIENT_SECRET = 'https://discord.com/developers/docs/quick-start/overview-of-apps' ## Optional if you are using the STEAM_USER_ID
+DISCORD_BOT_TOKEN='https://discord.com/developers/docs/quick-start/overview-of-apps' ## Optional if you are using the STEAM_USER_ID
+STEAM_KEY = 'https://steamcommunity.com/dev'
+STEAM_USER_ID = 'https://www.steamidfinder.com/' ## Optional if you are using Discord Integration
+GMAIL_APP_EMAIL = '<Your GMail>'
+GMAIL_APP_PASSWORD = 'https://support.google.com/accounts/answer/185833?hl=en'
