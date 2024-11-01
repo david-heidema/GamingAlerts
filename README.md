@@ -1,7 +1,7 @@
 # About The Project
 Notify your friends, significate other, etc when you are playing Steam games. 
 
-This project is Python script that runs locally on a gamer's computer to text individuals your gaming status when start a new gaming session, launch a new game, and end your gaming session. 
+This project is Python script that runs locally on a gamer's computer to text individuals your gaming status when they start a new gaming session, launch a new game, and end a gaming session. 
 
 # Requirements
 To leverage this script you will need to know the phone number and mobile carrier of your recipient(s). The script expects for these values to be set within a configuration file 'userConfig.yaml' at the root of the project. See 'exampleUserConfig.yaml' for an example of how data should be arranged.
