@@ -4,11 +4,11 @@ Notify your friends, significate other, etc when you are playing Steam games.
 This project is Python script that runs locally on a gamer's computer to text individuals your gaming status when they start a new gaming session, launch a new game, and end a gaming session. 
 
 # Requirements
-To leverage this script you will need to know the phone number and mobile carrier of your recipient(s). The script expects for these values to be set within a configuration file 'userConfig.yaml' at the root of the project. See 'exampleUserConfig.yaml' for an example of how data should be arranged.
+To leverage this script you will need to know the phone number and mobile carrier of your recipient(s). The script expects for these values to be set within a configuration file 'userConfig.yaml' at the root of the project. See [exampleUserConfig.yaml](https://github.com/david-heidema/GamingAlerts/blob/main/exampleUserConfig.yaml) for an example of how data should be arranged.
 
 # Integrations
  - Discord API
- - GMAIL
+ - Gmail
  - Steam
 
 # Setup
@@ -25,7 +25,7 @@ Dynamically catures the Steam ID of the Discord user. This integration is option
 
 If you don't wish to setup Discord integration you can find your Steam ID manaully. See here fore more details on finding your Steam ID - https://www.steamidfinder.com/
 
-Once you have secured the needed secrets from the intergation providers, you will need to create a .env file at the root of the project, which contains your relivant secrets with the exact naming as shown in 'example.env'.
+Once you have secured the needed secrets from the intergation providers, you will need to create a .env file at the root of the project, which contains your relivant secrets with the exact naming as shown in [example.env](https://github.com/david-heidema/GamingAlerts/blob/main/example.env%20).
 
 # Caveats
 This has only been tested with the following carriers - Verizon, Pure Talk, Mint Mobile
