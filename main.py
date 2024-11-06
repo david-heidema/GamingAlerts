@@ -100,12 +100,6 @@ def find_key(data, key):
                 return result
     return None
 
-def get_curr_steam_game(summary_data):
-    return find_key(summary_data, 'gameextrainfo')
-
-def get_steam_logoff(summary_data):
-    return find_key(summary_data, 'lastlogoff')
-
 def text_content(gamer_name, curr_game, gaming_status = True):
 
     ## TODO: Parameterize to be used to other time zones, make a map so user can enter plan english
@@ -165,7 +159,7 @@ if __name__ == '__main__':
     while(True):
         iter+=1
         user_data = get_steam_user_summary(steam_user_id)
-        current_steam_game = get_curr_steam_game(user_data)
+        current_steam_game = find_key(summary_data, 'gameextrainfo')
 
         # Send an update text if playing a new game
         if current_steam_game is not None and current_steam_game != last_iter_steam_game:
